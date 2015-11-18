@@ -175,7 +175,7 @@ class Event
 
        \Workerman\Lib\Timer::del($_SESSION['timeid']);
        // 更新MYSQL数据库
-       self::$connectHC->query("UPDATE `HC` SET `clientid` = 0, `lastouttime` = CURRENT_TIMESTAMP() WHERE clientid='$client_id'");
+       self::$connectHC->query("UPDATE `HC` SET `clientid` = '0', `lastouttime` = CURRENT_TIMESTAMP() WHERE clientid='$client_id'");
 
    }
 
