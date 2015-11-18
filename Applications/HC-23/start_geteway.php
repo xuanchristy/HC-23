@@ -21,6 +21,7 @@ $gateway->count = 1;
 $gateway->lanIp = '127.0.0.1';
 // 内部通讯起始端口
 $gateway->startPort = 50006;
+$gateway->registerAddress = '127.0.0.1:1236';
 // 心跳间隔
 // $gateway->pingInterval = 1;
 // // 心跳不响应次数
