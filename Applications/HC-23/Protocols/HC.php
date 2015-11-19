@@ -1,28 +1,29 @@
 <?php
 namespace Protocols;
+use \Workerman\Connection\TcpConnection;
 
 class HC{
 
 	/**
-	 * 验证数据包长度是否正确
+	 * 验证协议长度是否正确
 	 * @param  string $str
 	 * @param  int $strlen
 	 * @param  int $headbegin
 	 * @return int
 	 */
 	private static function regmessage($str, $strlen, $headbegin){
-		// 协议中数据包长度
+		// 协议长度
 		$datalenght = self::datalenght(substr($str, $headbegin+6, 2));
-		// 按照数据包长度去找协议尾
+		// 按照协议长度去找协议尾
 		$endsign = substr($str, $datalenght-4, 4);
-		// 判断数据包长度是否符合协议
+		// 判断协议长度是否符合协议
 		if($endsign === "\x48\x43\x0D\x0A")
 		{
 			return $datalenght;
 		}
 		// 最后一次出现数据尾的位置
 		$lastendsign = strrpos($str, "\x48\x43\x0D\x0A");
-		// 数据包长度小于实际长度
+		// 协议长度小于实际长度
 		if($endsign !== false && $datalenght < ($lastendsign+4))
 		{
 			$headbegin = strpos($str, '++HC', $headbegin+4);
@@ -42,7 +43,7 @@ class HC{
 		return 0;
 	}
 	/**
-	 * 没有找到'++HC'情况下,最优解决
+	 * 没有找到'++HC'情况下,找可能的数据头
 	 * @param  string $str
 	 * @return int $strlen
 	 * @return int
@@ -63,7 +64,7 @@ class HC{
   		return $strlen;
 	}
 	/**
-	 * 16进制字符转换为10进制数字
+	 * 计算协议长度
 	 * @param  string $str
 	 * @return int | bool
 	 */
@@ -82,10 +83,16 @@ class HC{
 	 * @param  string $buffer
 	 * @return int
 	 */
-	public static function input($buffer){
+	public static function input($buffer, TcpConnection $connection){
 
 		// 数据包总长度
 		$bufferlenght = strlen($buffer);
+		// 防止用户传输不符合协议的超大数据包(10M)
+		if($bufferlenght >= TcpConnection::$maxPackageSize)
+        {
+            $connection->close();
+            return 0;
+        }
 		// '+'开头,数据包大于4位
 		if($bufferlenght >= 4)
 		{
