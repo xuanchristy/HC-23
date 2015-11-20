@@ -1,7 +1,7 @@
 <?php
 use \GatewayWorker\Lib\Gateway;
 use \GatewayWorker\Lib\Db;
-use \GatewayWorker\Lib\Store;
+// use \GatewayWorker\Lib\Store;
 // require_once 'Web/transToWxServer.php';
 require_once 'Web/redisData.php';
 

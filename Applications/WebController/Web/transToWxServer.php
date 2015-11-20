@@ -4,7 +4,10 @@ require_once 'redisData.php';
 
 class transToWxServer{
 
-	//得到access_token，并存入redis中
+	/**
+	 * 得到access_token，并存入redis中
+	 * @return void
+	 */
 	public static function getaccess_token(){
 
 		$appid = "wx3faa5c04dbde6ac2";
@@ -25,7 +28,10 @@ class transToWxServer{
 
 	}
 
-	//得到jsapi_ticket，并存入redis中
+	/**
+	 * 得到jsapi_ticket，并存入redis中
+	 * @return void
+	 */
 	public static function getjsapi_ticket(){
 
 		$access_token = redisData::Get('access_token');
@@ -46,6 +52,7 @@ class transToWxServer{
 
 	/**
 	 * 得到网页授权的用户openid
+	 * @param  string $code
 	 * @return  string
 	 */
 	public static function getOAuth_openid($code){
@@ -66,7 +73,13 @@ class transToWxServer{
 		return $openid;
 	}
 
-	//调用客服接口给用户主动推送消息
+	/**
+	 * 调用客服接口给用户主动推送消息
+	 * @param  Object $object
+	 * @param  string $content
+	 * @param  string $kf_account
+	 * @return void
+	 */
 	public static function transToWxClientMsg($object, $content, $kf_account="")
 	{
 
@@ -100,7 +113,13 @@ class transToWxServer{
 		curl_close($ch);
 	}
 
-	//主动为一个多客服创建会话
+	/**
+	 * 主动为一个多客服创建会话
+	 * @param  Object $object
+	 * @param  string $kf_account
+	 * @param  string $content
+	 * @return void
+	 */
 	public static function createSalerSession($object, $kf_account, $content)
 	{
 
@@ -124,7 +143,13 @@ class transToWxServer{
 		curl_close($ch);
 	}
 
-	//主动为一个多客服关闭会话
+	/**
+	 * 主动为一个多客服关闭会话
+	 * @param  Object $object
+	 * @param  string $kf_account
+	 * @param  string $content
+	 * @return void
+	 */
 	public static function closeSalerSession($object, $kf_account, $content)
 	{
 		$access_token = redisData::Get('access_token');
