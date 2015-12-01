@@ -14,14 +14,14 @@ class Event
      * redis数据库链接
      * @return object
      */
-    // private static function connectRedis(){
+    private static function connectRedis(){
 
-    // 	$redis = new Redis();
-    //     $redis->connect('127.0.0.1', '6381');
-    //     return $redis;
-    // }
+    	$redis = new Redis();
+        $redis->connect('127.0.0.1', '6382');
+        return $redis;
+    }
     // 存储连接REDIS实例
-    // private static $connectRedis = null;
+    private static $redisConnection = null;
     
     // 存储连接MYSQL实例
     private static $connectHC = null;
@@ -60,10 +60,15 @@ class Event
 	 */
     public static function onConnect($client_id)
     {
+    	if(!isset(self::$redisConnection))
+    	{
+    		self::$redisConnection = self::connectRedis();
+    	}
     	// 增加定时器（31s关闭客户端连接）
-    	$_SESSION['timeid'] = \Workerman\Lib\Timer::add(31,function($client_id){
+    	$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
     		Gateway::closeClient($client_id);
     	},array($client_id),false);
+    	self::$redisConnection->set($client_id, $timeid);
     	// 连接MYSQL数据库
     	self::$connectHC = isset(self::$connectHC)? self::$connectHC : Db::instance('ConnectDb');
     	// 请求客户端注册
@@ -89,14 +94,16 @@ class Event
 		$messageClass 	= 	substr($message,33,1);
 		// 得到心跳包类型
 		$onlinedata 	= 	substr($message,35,1);
+		// var_dump($client_id.'--0--'.bin2hex($message));
 		// 判断心跳包
 		if($onlinedata === "\xE2" && isset($_SESSION['registflag']))
 		{
 			// 收到心跳包重新定时
-		    \Workerman\Lib\Timer::del($_SESSION['timeid']);
-			$_SESSION['timeid'] = \Workerman\Lib\Timer::add(31,function($client_id){
+		    \Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
+			$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
 		    Gateway::closeClient($client_id);
 		    },array($client_id),false);
+		    self::$redisConnection->set($client_id, $timeid);
 		    return;
 		}
 		// 注册成功返回信息 && 发送失败返回信息
@@ -114,6 +121,7 @@ class Event
 			    // 	// 记录控制次数
 			    // 	self::$connectHC->query("UPDATE `HC` SET `control` = `control`+1 WHERE macid='$startaddr'");
 			    // }
+			    // var_dump($_SESSION["$targetaddr"].'--1--'.bin2hex($message));
 			    Gateway::sendToClient($_SESSION["$targetaddr"], $message);
 			    return;
 		    }
@@ -127,6 +135,7 @@ class Event
 			    // 	// 记录控制次数
 			    // 	self::$connectHC->query("UPDATE `HC` SET `control` = `control`+1 WHERE macid='$startaddr'");
 			    // }
+			    // var_dump($_SESSION["$targetaddr"].'--'.bin2hex($message));
 			    Gateway::sendToClient($targetaddrclientid, $message);
 			    return;
 			}
@@ -137,6 +146,13 @@ class Event
 		if($targetaddr === Protocol::$V1['DEFALUT_SMAC']){
 			// 重复注册
 			if(isset($_SESSION['registflag']) && $_SESSION['registflag'] === 1){
+				// 心跳包更新
+				\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
+				$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
+		    	Gateway::closeClient($client_id);
+		    	},array($client_id),false);
+		    	self::$redisConnection->set($client_id, $timeid);
+				// 注册成功
 				Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
 				return;
 			}
@@ -146,6 +162,13 @@ class Event
 		    	// 更新MYSQL数据库
 		    	self::$connectHC->query("UPDATE `HC` SET `clientid` = $client_id, `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
 		    	$_SESSION['registflag'] = 1;
+		    	// 心跳包更新
+		    	\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
+				$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
+		    	Gateway::closeClient($client_id);
+		    	},array($client_id),false);
+		    	self::$redisConnection->set($client_id, $timeid);
+		    	// 注册成功
 		    	Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
 		    	return;
 		    }
@@ -153,12 +176,26 @@ class Event
 		    	// 插入MYSQL数据库
 		    	self::$connectHC->query("INSERT INTO `HC` ( `macid`,`clientid`,`lastintime`) VALUES ('$startaddr', '$client_id',CURRENT_TIMESTAMP())");
 		    	$_SESSION['registflag'] = 1;
+		    	// 心跳包更新
+		    	\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
+				$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
+		    	Gateway::closeClient($client_id);
+		    	},array($client_id),false);
+		    	self::$redisConnection->set($client_id, $timeid);
+		    	// 注册成功
 		    	Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
 		    	return;
 		    }
 		    // 更新MYSQL数据库
 		    self::$connectHC->query("UPDATE `HC` SET `clientid` = $client_id, `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
 		    $_SESSION['registflag'] = 1;
+		    // 心跳包更新
+		    \Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
+			$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
+		    Gateway::closeClient($client_id);
+		    },array($client_id),false);
+		    self::$redisConnection->set($client_id, $timeid);
+		    // 注册成功
 		    Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
 		    return;
 		}
@@ -173,7 +210,8 @@ class Event
    public static function onClose($client_id)
    {
 
-       \Workerman\Lib\Timer::del($_SESSION['timeid']);
+       \Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
+       self::$redisConnection->del($client_id);
        // 更新MYSQL数据库
        self::$connectHC->query("UPDATE `HC` SET `clientid` = 0, `lastouttime` = CURRENT_TIMESTAMP() WHERE clientid='$client_id'");
 
