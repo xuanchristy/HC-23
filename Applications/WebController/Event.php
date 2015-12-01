@@ -46,13 +46,13 @@ class Event
 		$result = $connectHC->single("SELECT clientid FROM `WEBHC` WHERE macid='$mac_id'");
 		// clientid不存在
 		if($result === false){
-			$connectHC->query("INSERT INTO `WEBHC` ( `macid`,`clientid`, `param`) VALUES ( '$mac_id', $client_id, '1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30')");
+			$connectHC->query("INSERT INTO `WEBHC` ( `macid`,`clientid`, `param`) VALUES ( '$mac_id', '$client_id', '1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30')");
 			$_SESSION['bind'] = self::BIND_STATE;
 			Gateway::sendToCurrentClient(self::SUCCESS_CONNECTION);
 			return;
 		// clientid等于0
 		}else if($result === '0'){
-			$row = $connectHC->query("UPDATE `WEBHC` SET `clientid` = $client_id, `sign` = 1 WHERE macid='$mac_id'");
+			$row = $connectHC->query("UPDATE `WEBHC` SET `clientid` = '$client_id', `sign` = 1 WHERE macid='$mac_id'");
 			if($row === 1){
 				$_SESSION['bind'] = self::BIND_STATE;
 				Gateway::sendToCurrentClient(self::SUCCESS_CONNECTION);
@@ -62,10 +62,10 @@ class Event
 			return;
 		}
 		// clientid存在且不等于0
-		if($result == $client_id){
+		if($result === $client_id){
 			Gateway::sendToCurrentClient(self::SUCCESS_CONNECTION);
 		}else{
-			$row = $connectHC->query("UPDATE `WEBHC` SET `clientid` = $client_id WHERE macid='$mac_id'");
+			$row = $connectHC->query("UPDATE `WEBHC` SET `clientid` = '$client_id' WHERE macid='$mac_id'");
 			if($row === 1){
 				Gateway::closeClient($result);
 				Gateway::sendToCurrentClient(self::SUCCESS_CONNECTION);
@@ -132,7 +132,7 @@ class Event
 				// 更新蓝牙连接标志
 				if(isset($message['sign'])){
 					$sign = $message['sign'];
-					$data = $connectHC->query("UPDATE `WEBHC` SET `sign` = $sign WHERE clientid=$client_id");
+					$data = $connectHC->query("UPDATE `WEBHC` SET `sign` = $sign WHERE clientid='$client_id'");
 					Gateway::sendToCurrentClient(self::SUCCESS_SET_SIGN);
 					return;
 				}
@@ -142,13 +142,13 @@ class Event
 					return;
 				}
 				// 更新APP键名
-				$param = $connectHC->row("SELECT `param` FROM `WEBHC` WHERE clientid=$client_id");
+				$param = $connectHC->row("SELECT `param` FROM `WEBHC` WHERE clientid='$client_id'");
 				$parambefore = explode('/', $param['param']);
 				foreach ($message as $key => $value) {
 					$parambefore[$key-1] = $value;
 				}
 				$paramafter = implode('/', $parambefore);
-				$connectHC->query("UPDATE `WEBHC` SET `param` = '$paramafter' WHERE clientid=$client_id");
+				$connectHC->query("UPDATE `WEBHC` SET `param` = '$paramafter' WHERE clientid='$client_id'");
 			}else{
 				// 回复心跳包
 				Gateway::sendToCurrentClient(1);

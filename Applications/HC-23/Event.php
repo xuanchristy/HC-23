@@ -14,14 +14,26 @@ class Event
      * redis数据库链接
      * @return object
      */
-    // private static function connectRedis(){
+    private static function connectRedis(){
 
-    // 	$redis = new Redis();
-    //     $redis->connect('127.0.0.1', '6381');
-    //     return $redis;
-    // }
+    	$redis = new Redis();
+        $redis->connect('127.0.0.1', '6380');
+        return $redis;
+    }
+    /**
+     * 更新定时器
+     * 注册成功或收到心跳包，更新定时器
+     * @param string $client_id
+     */
+    private static function setTimeid($client_id){
+    	\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
+			$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
+		    Gateway::closeClient($client_id);
+		    },array($client_id),false);
+		self::$redisConnection->set($client_id, $timeid);
+    }
     // 存储连接REDIS实例
-    // private static $connectRedis = null;
+    private static $redisConnection = null;
     
     // 存储连接MYSQL实例
     private static $connectHC = null;
@@ -93,10 +105,7 @@ class Event
 		if($onlinedata === "\xE2" && isset($_SESSION['registflag']))
 		{
 			// 收到心跳包重新定时
-		    \Workerman\Lib\Timer::del($_SESSION['timeid']);
-			$_SESSION['timeid'] = \Workerman\Lib\Timer::add(31,function($client_id){
-		    Gateway::closeClient($client_id);
-		    },array($client_id),false);
+		    
 		    return;
 		}
 		// 注册成功返回信息 && 发送失败返回信息
