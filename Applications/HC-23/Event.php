@@ -10,6 +10,13 @@ use \GatewayWorker\Lib\Protocol;
 **/
 class Event
 {   
+ 
+    // 存储连接REDIS实例
+    private static $redisConnection = null;
+    
+    // 存储连接MYSQL实例
+    private static $connectHC = null;
+    
     /**
      * redis数据库链接
      * @return object
@@ -20,12 +27,22 @@ class Event
         $redis->connect('127.0.0.1', '6382');
         return $redis;
     }
-    // 存储连接REDIS实例
-    private static $redisConnection = null;
-    
-    // 存储连接MYSQL实例
-    private static $connectHC = null;
-    
+    /**
+     * 更新定时器
+     * 当注册成功或者心跳包接收，更新定时器
+     * @param  int $client_id
+     * @return void
+     */
+    private static function updateTimeid($client_id){
+    	// 删除定时器
+    	\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
+		// 增加定时器
+		$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
+		  Gateway::closeClient($client_id);
+		},array($client_id),false);
+		// 定时器ID写入redis中
+		self::$redisConnection->set($client_id, $timeid);
+    }
     /**
      * 请求客户端注册
      * 客户端连接上，服务器主动询问客户端注册
@@ -99,11 +116,7 @@ class Event
 		if($onlinedata === "\xE2" && isset($_SESSION['registflag']))
 		{
 			// 收到心跳包重新定时
-		    \Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
-			$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
-		    Gateway::closeClient($client_id);
-		    },array($client_id),false);
-		    self::$redisConnection->set($client_id, $timeid);
+		    self::updateTimeid($client_id);
 		    return;
 		}
 		// 注册成功返回信息 && 发送失败返回信息
@@ -141,17 +154,14 @@ class Event
 			}
 			// 目的客户端不在线则回复
 			Gateway::sendToCurrentClient($_SESSION["transerror"]);
+			return;
 		}
 		// 客户端注册
 		if($targetaddr === Protocol::$V1['DEFALUT_SMAC']){
 			// 重复注册
 			if(isset($_SESSION['registflag']) && $_SESSION['registflag'] === 1){
 				// 心跳包更新
-				\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
-				$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
-		    	Gateway::closeClient($client_id);
-		    	},array($client_id),false);
-		    	self::$redisConnection->set($client_id, $timeid);
+				self::updateTimeid($client_id);
 				// 注册成功
 				Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
 				return;
@@ -163,11 +173,7 @@ class Event
 		    	self::$connectHC->query("UPDATE `HC` SET `clientid` = $client_id, `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
 		    	$_SESSION['registflag'] = 1;
 		    	// 心跳包更新
-		    	\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
-				$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
-		    	Gateway::closeClient($client_id);
-		    	},array($client_id),false);
-		    	self::$redisConnection->set($client_id, $timeid);
+		    	self::updateTimeid($client_id);
 		    	// 注册成功
 		    	Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
 		    	return;
@@ -177,11 +183,7 @@ class Event
 		    	self::$connectHC->query("INSERT INTO `HC` ( `macid`,`clientid`,`lastintime`) VALUES ('$startaddr', '$client_id',CURRENT_TIMESTAMP())");
 		    	$_SESSION['registflag'] = 1;
 		    	// 心跳包更新
-		    	\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
-				$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
-		    	Gateway::closeClient($client_id);
-		    	},array($client_id),false);
-		    	self::$redisConnection->set($client_id, $timeid);
+		    	self::updateTimeid($client_id);
 		    	// 注册成功
 		    	Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
 		    	return;
@@ -190,11 +192,7 @@ class Event
 		    self::$connectHC->query("UPDATE `HC` SET `clientid` = $client_id, `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
 		    $_SESSION['registflag'] = 1;
 		    // 心跳包更新
-		    \Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
-			$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
-		    Gateway::closeClient($client_id);
-		    },array($client_id),false);
-		    self::$redisConnection->set($client_id, $timeid);
+		    self::updateTimeid($client_id);
 		    // 注册成功
 		    Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
 		    return;
