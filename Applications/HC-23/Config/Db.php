@@ -15,7 +15,7 @@ class Db
 	// REDIS配置
 	public static $ConnectRedis = array(
 		'host'		=> '127.0.0.1',
-		'port'		=> 6380
+		'port'		=> '6380'
 	);
 }
 ?>

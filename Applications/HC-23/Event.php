@@ -2,6 +2,7 @@
 use \GatewayWorker\Lib\Gateway;
 use \GatewayWorker\Lib\Db;
 use \GatewayWorker\Lib\Protocol;
+use \GatewayWorker\Lib\Store;
 
 /**
  * 主逻辑
@@ -16,13 +17,23 @@ class Event
     // 存储连接MYSQL实例
     private static $connectHC = null;
     /**
+     * 初始化SESSION中的信息
+     * @param string $startaddr
+     */
+    private static function setSessionStart($startaddr){
+    	$_SESSION['registsuccess'] 	=	"++HC\x01\x01\x00\x2A".$startaddr.Protocol::$V1['DEFALUT_SMAC'].Protocol::$V1['SERVER_MODEL']."\x00\x00".Protocol::$V1['STATUS_CONNECTED']."\xFF\x00HC\r\n";
+		$_SESSION['transerror'] 	=	"++HC\x01\x01\x00\x2A".$startaddr.Protocol::$V1['DEFALUT_SMAC'].Protocol::$V1['SERVER_MODEL']."\x00\x00".Protocol::$V1['STATUS_DISONLINE']."\xFF\x00HC\r\n";
+    	$_SESSION['setini'] = 1;
+    }
+    /**
      * redis数据库链接
      * @return object
      */
     private static function connectRedis(){
 
     	$redis = new Redis();
-        $redis->connect(Db::$ConnectRedis['host'], Db::$ConnectRedis['port']);
+    	$redisconf = Store::instance('ConnectRedis');
+        $redis->connect($redisconf['host'], $redisconf['port']);
         return $redis;
     }
     /**
@@ -108,23 +119,28 @@ class Event
 		$messageClass 	= 	substr($message,33,1);
 		// 得到心跳包类型
 		$onlinedata 	= 	substr($message,35,1);
-		// 判断心跳包
+		// 更新心跳包
 		if($onlinedata === "\xE2" && isset($_SESSION['registflag']))
 		{
-			// 收到心跳包重新定时
+
 		    self::setTimeid($client_id);
 		    return;
 		}
-		// 注册成功返回信息 && 发送失败返回信息
-		if(!isset($_SESSION["registsuccess"]) && !isset($_SESSION["transerror"]))
+		// 初始化SESSION
+		if(!isset($_SESSION['setini']))
 		{
-		   $_SESSION["registsuccess"] 	=	"++HC\x01\x01\x00\x2A".$startaddr.Protocol::$V1['DEFALUT_SMAC'].Protocol::$V1['SERVER_MODEL']."\x00\x00".Protocol::$V1['STATUS_CONNECTED']."\xFF\x00HC\r\n";
-		   $_SESSION["transerror"] 		=	"++HC\x01\x01\x00\x2A".$startaddr.Protocol::$V1['DEFALUT_SMAC'].Protocol::$V1['SERVER_MODEL']."\x00\x00".Protocol::$V1['STATUS_DISONLINE']."\xFF\x00HC\r\n";
+			self::setSessionStart($startaddr);
 		}
+		
+
 		// 客户端之间通讯
 		if($wifiversion === "\x01\x01" && $targetaddr !== Protocol::$V1['DEFALUT_SMAC'])
 		{
-		    // 判断$_SESSION缓存中客户端client_id是否在线
+		    /**
+		     * 判断SESSION缓存中客户端client_id是否在线
+		     * 在线就转发
+		     * 不在线查找MYSQL数据库
+		     */
 		    if(isset($_SESSION["$targetaddr"])	&&	Gateway::isOnline($_SESSION["$targetaddr"])){
 		    	// if($messageClass === "\x02"){
 			    // 	// 记录控制次数
@@ -148,14 +164,14 @@ class Event
 			    return;
 			}
 			// 目的客户端不在线则回复
-			Gateway::sendToCurrentClient($_SESSION["transerror"]);
+			Gateway::sendToCurrentClient($_SESSION['transerror']);
 		}
 		// 客户端注册
 		if($targetaddr === Protocol::$V1['DEFALUT_SMAC']){
 			// 重复注册
 			if(isset($_SESSION['registflag']) && $_SESSION['registflag'] === 1){
 				self::setTimeid($client_id);
-				Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
+				Gateway::sendToCurrentClient($_SESSION['registsuccess']);
 				return;
 			}
 		    // 判断客户端是否存在
@@ -165,7 +181,7 @@ class Event
 		    	self::$connectHC->query("UPDATE `HC` SET `clientid` = '$client_id', `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
 		    	$_SESSION['registflag'] = 1;
 		    	self::setTimeid($client_id);
-		    	Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
+		    	Gateway::sendToCurrentClient($_SESSION['registsuccess']);
 		    	return;
 		    }
 		    if($selectclientid === false){
@@ -173,14 +189,14 @@ class Event
 		    	self::$connectHC->query("INSERT INTO `HC` ( `macid`,`clientid`,`lastintime`) VALUES ('$startaddr', '$client_id',CURRENT_TIMESTAMP())");
 		    	$_SESSION['registflag'] = 1;
 		    	self::setTimeid($client_id);
-		    	Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
+		    	Gateway::sendToCurrentClient($_SESSION['registsuccess']);
 		    	return;
 		    }
 		    // 更新MYSQL数据库
 		    self::$connectHC->query("UPDATE `HC` SET `clientid` = '$client_id', `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
 		    $_SESSION['registflag'] = 1;
 		    self::setTimeid($client_id);
-		    Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
+		    Gateway::sendToCurrentClient($_SESSION['registsuccess']);
 		    return;
 		}
     }
