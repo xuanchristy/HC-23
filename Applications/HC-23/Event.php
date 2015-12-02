@@ -9,9 +9,10 @@ use \GatewayWorker\Lib\Protocol;
 **/
 class Event
 {   
+    // 心跳包时间间隔
+    private static $heartInteval = 31;
     // 存储连接REDIS实例
-    private static $redisConnection = null;
-    
+    private static $redisConnection = null;    
     // 存储连接MYSQL实例
     private static $connectHC = null;
     /**
@@ -21,7 +22,7 @@ class Event
     private static function connectRedis(){
 
     	$redis = new Redis();
-        $redis->connect('127.0.0.1', '6380');
+        $redis->connect(Db::$ConnectRedis['host'], Db::$ConnectRedis['port']);
         return $redis;
     }
     /**
@@ -30,8 +31,10 @@ class Event
      * @param string $client_id
      */
     private static function setTimeid($client_id){
+    	
+    	// 删除旧定时器，创建新定时器
     	\Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
-			$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
+			$timeid = \Workerman\Lib\Timer::add(self::$heartInteval, function($client_id){
 		    Gateway::closeClient($client_id);
 		    },array($client_id),false);
 		self::$redisConnection->set($client_id, $timeid);
@@ -75,8 +78,8 @@ class Event
     	{
     		self::$redisConnection = self::connectRedis();
     	}
-    	// 增加定时器（31s关闭客户端连接）
-    	$timeid = \Workerman\Lib\Timer::add(31,function($client_id){
+    	// 增加定时器(心跳包)
+    	$timeid = \Workerman\Lib\Timer::add(self::$heartInteval, function($client_id){
     		Gateway::closeClient($client_id);
     	},array($client_id),false);
     	self::$redisConnection->set($client_id, $timeid);
