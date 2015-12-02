@@ -1,7 +1,6 @@
 <?php
 use \GatewayWorker\Lib\Gateway;
 use \GatewayWorker\Lib\Db;
-use \GatewayWorker\Lib\Store;
 use \GatewayWorker\Lib\Protocol;
 
 /**
@@ -136,7 +135,8 @@ class Event
 			// 如果目的客户端在线则转发
 			if(Gateway::isOnline($targetaddrclientid)){
 				// 写入$_SESSION缓存
-				$_SESSION["$targetaddr"] = intval($targetaddrclientid);
+				$_SESSION["$targetaddr"] = $targetaddrclientid;
+				var_dump($_SESSION["$targetaddr"]);
 			   	// if($messageClass === "\x02"){
 			    // 	// 记录控制次数
 			    // 	self::$connectHC->query("UPDATE `HC` SET `control` = `control`+1 WHERE macid='$startaddr'");
@@ -159,7 +159,7 @@ class Event
 		    $selectclientid = self::$connectHC->single("SELECT clientid FROM `HC` WHERE macid='$startaddr'");
 		    if($selectclientid === "0"){
 		    	// 更新MYSQL数据库
-		    	self::$connectHC->query("UPDATE `HC` SET `clientid` = $client_id, `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
+		    	self::$connectHC->query("UPDATE `HC` SET `clientid` = '$client_id', `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
 		    	$_SESSION['registflag'] = 1;
 		    	self::setTimeid($client_id);
 		    	Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
@@ -174,7 +174,7 @@ class Event
 		    	return;
 		    }
 		    // 更新MYSQL数据库
-		    self::$connectHC->query("UPDATE `HC` SET `clientid` = $client_id, `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
+		    self::$connectHC->query("UPDATE `HC` SET `clientid` = '$client_id', `lastintime` = CURRENT_TIMESTAMP() WHERE macid='$startaddr'");
 		    $_SESSION['registflag'] = 1;
 		    self::setTimeid($client_id);
 		    Gateway::sendToCurrentClient($_SESSION["registsuccess"]);
