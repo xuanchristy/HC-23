@@ -23,7 +23,7 @@ class Event
     private static function setSessionStart($startaddr){
     	$_SESSION['registsuccess'] 	=	"++HC\x01\x01\x00\x2A".$startaddr.Protocol::$V1['DEFALUT_SMAC'].Protocol::$V1['SERVER_MODEL']."\x00\x00".Protocol::$V1['STATUS_CONNECTED']."\xFF\x00HC\r\n";
 		$_SESSION['transerror'] 	=	"++HC\x01\x01\x00\x2A".$startaddr.Protocol::$V1['DEFALUT_SMAC'].Protocol::$V1['SERVER_MODEL']."\x00\x00".Protocol::$V1['STATUS_DISONLINE']."\xFF\x00HC\r\n";
-    	$_SESSION['inisession'] 		= 	1;
+    	$_SESSION['inisession'] 	= 	1;
     }
     /**
      * redis数据库链接
