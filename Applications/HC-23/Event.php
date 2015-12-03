@@ -108,7 +108,8 @@ class Event
 	 */
    	public static function onMessage($client_id, $message)
    	{
-		
+		// var_dump(bin2hex($message));
+		// Gateway::sendToCurrentClient($message);
 		// 得到协议版本
 		$wifiversion 	= 	substr($message,4,2);
 		// 得到消息中的目的源地址
@@ -152,7 +153,7 @@ class Event
 		    // 得到目的客户端client_id
 			$targetaddrclientid = self::$connectHC->single("SELECT clientid FROM `HC` WHERE macid='$targetaddr'");
 			// 如果目的客户端在线则转发
-			if(Gateway::isOnline($targetaddrclientid)){
+			if(Gateway::isOnline("$targetaddrclientid")){
 				// 写入$_SESSION缓存
 				$_SESSION["$targetaddr"] = $targetaddrclientid;
 				var_dump($_SESSION["$targetaddr"]);
@@ -213,7 +214,7 @@ class Event
        \Workerman\Lib\Timer::del(self::$redisConnection->get($client_id));
        self::$redisConnection->del($client_id);
        // 更新MYSQL数据库
-       self::$connectHC->query("UPDATE `HC` SET `clientid` = '0', `lastouttime` = CURRENT_TIMESTAMP() WHERE clientid='$client_id'");
+       self::$connectHC->query("UPDATE `HC` SET `clientid` = '00000000000000000000', `lastouttime` = CURRENT_TIMESTAMP() WHERE clientid='$client_id'");
 
    }
 

@@ -73,15 +73,6 @@ class Event
 				Gateway::sendToCurrentClient("fail");
 			}
 		}
-			// if($row === 1){
-			// 	$_SESSION['bind'] = self::BIND_STATE;
-			// 	Gateway::closeClient($result);
-			// 	Gateway::sendToCurrentClient(self::SUCCESS_CONNECTION);
-			// 	return;
-			// }else{
-			// 	Gateway::sendToCurrentClient("fail");
-			// 	return;
-			// }
 	}
 
 	/**
@@ -91,8 +82,6 @@ class Event
 	 */
     public static function onConnect($client_id)
     {
-    	
-    	// Gateway::sendToCurrentClient(self::SUCCESS_CONNECTION);
        
     }
 
@@ -104,17 +93,7 @@ class Event
 	 */
    public static function onMessage($client_id, $message)
    {
-   			/**
-      		 * 得到客户端的IP和端口号
-      		 * var_dump($_SERVER['REMOTE_ADDR'].':'.$_SERVER['REMOTE_PORT']);
-      		 */
-  //     	// var_export(json_encode($message, JSON_UNESCAPED_UNICODE));
-  //     	// $data = json_encode($message, JSON_UNESCAPED_UNICODE);
-  //   	// if( $fileType != 'UTF-8'){
-  //    //  	$data = mb_convert_encoding($message['macid'] ,'utf-8' , $fileType);
-  //    //  	}
-  //    //  	var_export($data);
-  //     	// var_export($message);
+   		
  		$connectHC = Db::instance('ConnectHC');
       	// 没有登录
       	if(!isset($_SESSION['bind'])){
