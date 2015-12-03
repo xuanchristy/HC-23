@@ -23,7 +23,7 @@ class Event
     private static function setSessionStart($startaddr){
     	$_SESSION['registsuccess'] 	=	"++HC\x01\x01\x00\x2A".$startaddr.Protocol::$V1['DEFALUT_SMAC'].Protocol::$V1['SERVER_MODEL']."\x00\x00".Protocol::$V1['STATUS_CONNECTED']."\xFF\x00HC\r\n";
 		$_SESSION['transerror'] 	=	"++HC\x01\x01\x00\x2A".$startaddr.Protocol::$V1['DEFALUT_SMAC'].Protocol::$V1['SERVER_MODEL']."\x00\x00".Protocol::$V1['STATUS_DISONLINE']."\xFF\x00HC\r\n";
-    	$_SESSION['setini'] = 1;
+    	$_SESSION['inisession'] 		= 	1;
     }
     /**
      * redis数据库链接
@@ -59,18 +59,18 @@ class Event
     private static function connectRegister(){
     	$data = array();
     	$message = NULL;
-    	$data['HeadSign'] 		= 	'++HC'; 						//数据头
-    	$data['Protocol'] 		= 	"\x01\x01"; 					//协议版本
-    	$data['MessageLength'] 	= 	"\x00\x2A"; 					//数据长度
-    	$data['TargetAddr'] 	= 	Protocol::$V1['DEFALUT_MMAC']; 	//数据目的客户端MAC
-    	$data['StartAddr'] 		= 	Protocol::$V1['DEFALUT_SMAC']; 	//数据起始客户端MAC
-    	$data['Model'] 			= 	Protocol::$V1['SERVER_MODEL']; 	//数据源设备类型
-    	$data['Class'] 			= 	"\x00"; 						//数据类型
-    	$data['Left'] 			= 	"\x00"; 						//参数左标记
-    	$data['AT'] 			= 	Protocol::$V1['REGISTER_MAC']; 	//AT类型
-    	$data['Param'] 			= 	"\xFF"; 						//参数
-    	$data['right'] 			= 	"\x00"; 						//参数右标记
-    	$data['End'] 			= 	"HC"."\r\n"; 					//数据尾
+    	$data['HeadSign']		= 	'++HC'; 						//数据头
+    	$data['Protocol']		= 	"\x01\x01"; 					//协议版本
+    	$data['MessageLength']	= 	"\x00\x2A"; 					//数据长度
+    	$data['TargetAddr']		= 	Protocol::$V1['DEFALUT_MMAC']; 	//数据目的客户端MAC
+    	$data['StartAddr']		= 	Protocol::$V1['DEFALUT_SMAC']; 	//数据起始客户端MAC
+    	$data['Model']			= 	Protocol::$V1['SERVER_MODEL']; 	//数据源设备类型
+    	$data['Class']			= 	"\x00"; 						//数据类型
+    	$data['Left']			= 	"\x00"; 						//参数左标记
+    	$data['AT']				= 	Protocol::$V1['REGISTER_MAC']; 	//AT类型
+    	$data['Param']			= 	"\xFF"; 						//参数
+    	$data['right']			= 	"\x00"; 						//参数右标记
+    	$data['End']			= 	"HC"."\r\n"; 					//数据尾
     	foreach ($data as $key => $value) {
 			$message .=$value;
     	}
@@ -127,7 +127,7 @@ class Event
 		    return;
 		}
 		// 初始化SESSION
-		if(!isset($_SESSION['setini']))
+		if(!isset($_SESSION['initsession']))
 		{
 			self::setSessionStart($startaddr);
 		}
@@ -139,7 +139,7 @@ class Event
 		    /**
 		     * 判断SESSION缓存中客户端client_id是否在线
 		     * 在线就转发
-		     * 不在线查找MYSQL数据库
+		     * 不在线，查找MYSQL数据库
 		     */
 		    if(isset($_SESSION["$targetaddr"])	&&	Gateway::isOnline($_SESSION["$targetaddr"])){
 		    	// if($messageClass === "\x02"){
