@@ -12,8 +12,12 @@ class Db
 		'dbname'	 => 'HC',
 		'charset'	 => 'utf8'
 	);
-	// REDIS配置
-	public static $ConnectRedis = array(
+	/**
+	 * REDIS配置
+	 * 定时器id缓存
+	 * @var array
+	 */
+	public static $timeid = array(
 		'host'		=> '127.0.0.1',
 		'port'		=> '6380'
 	);
