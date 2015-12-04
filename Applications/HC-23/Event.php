@@ -43,10 +43,10 @@ class Event
     	// 生成连接MYSQL实例
     	if(!isset(self::$connectHC))
     	{
-    		Db::instance('ConnectDb');
+    		self::$connectHC = Db::instance('ConnectDb');
     	}
     	// 生成注册请求包
-    	if(!empty(self::$pushRegistMessage))
+    	if(empty(self::$pushRegistMessage))
     	{
     		$data = array();
     		$message = '';
