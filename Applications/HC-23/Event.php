@@ -112,8 +112,7 @@ class Event
 	 * @param  int $client_id
 	 * @return void
 	 */
-    public static function onConnect($client_id)
-    {
+    public static function onConnect($client_id){
     	// 初始化
     	self::init();
     	// 增加定时器(心跳包)
